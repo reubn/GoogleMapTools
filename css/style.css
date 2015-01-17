@@ -42,7 +42,7 @@ display: none;
     overflow: hidden;
     text-align: center;
     position: absolute;
-    color: #000; 
+    color: #000;
     font-family: Roboto, Arial, sans-serif;
     padding: 1%;
     border-bottom-left-radius: 2px;
@@ -51,12 +51,22 @@ display: none;
     border: 1px solid rgba(0, 0, 0, 0.14902);
     -webkit-box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
     box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
-    min-width: 50px;  
+    min-width: 50px;
     background-color: #FFF;
     background-clip:padding-box;
     bottom: 23%;
     right: 1%;
     z-index: 500;
+}
+
+.info #download{
+  font-size:1rem;
+  font-weight:bold;
+}
+
+.info #download:hover{
+  color: #5dade2;
+  cursor: pointer;
 }
 
 .google-visualization-tooltip{

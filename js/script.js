@@ -1,12 +1,12 @@
-$('#map_canvas').on('contextmenu', function (e) {
-    return false;
+$('#map_canvas').on('contextmenu', function(e) {
+  return false;
 });
 var map, path = new google.maps.MVCArray(),
-    service = new google.maps.DirectionsService(),
-    poly;
+  service = new google.maps.DirectionsService(),
+  poly;
 
 google.load("visualization", "1", {
-    packages: ["corechart"]
+  packages: ["corechart"]
 });
 google.setOnLoadCallback(Init);
 
@@ -26,224 +26,228 @@ var endMarker = null;
 var highestMarker = null;
 var lowestMarker = null;
 
+var kmlFirst = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Your Route</name><description>googlemaptools.reub.tk</description><Style id="routeStyle"><LineStyle><color>ff0000ff</color><width>2</width></LineStyle></Style><Placemark><name>Your Route</name><description>googlemaptools.reub.tk</description><styleUrl>#routeStyle</styleUrl><LineString><coordinates>';
+var kmlLast = '</coordinates></LineString></Placemark></Document></kml>';
+
+
 var dist;
 var resLeng;
 
 function Init() {
-    //chart = new google.visualization.ColumnChart(document.getElementById('chart'));
-    chart = new google.visualization.AreaChart(document.getElementById('chart'));
-    elevationService = new google.maps.ElevationService();
-    var myOptions = {
-        zoom: 17,
-        center: new google.maps.LatLng(52.050077, -2.694269),
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        mapTypeControlOptions: {
-            mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.TERRAIN,
-                google.maps.MapTypeId.SATELLITE
-            ]
-        },
-        disableDoubleClickZoom: true,
-        scrollwheel: true,
-        draggableCursor: "crosshair",
-        styles: [{
-            "featureType": "road.local",
-            "elementType": "labels.text",
-            "stylers": [{
-                "visibility": "off"
-            }]
-        }, {
-            "featureType": "poi",
-            "stylers": [{
-                "visibility": "off"
-            }]
-        }, {
-            "featureType": "poi.park",
-            "stylers": [{
-                "visibility": "simplified"
-            }]
-        }, {
-            "featureType": "poi.medical",
-            "stylers": [{
-                "visibility": "simplified"
-            }]
-        }, {
-            "featureType": "poi.sports_complex",
-            "stylers": [{
-                "visibility": "simplified"
-            }]
-        }, {
-            "featureType": "road.highway",
-            "elementType": "labels.text",
-            "stylers": [{
-                "visibility": "on"
-            }]
-        }, {
-            "featureType": "water",
-            "stylers": [{
-                "visibility": "simplified"
-            }]
-        }, {
-            "featureType": "transit.station",
-            "stylers": [{
-                "visibility": "simplified"
-            }]
-        }, {
-            "featureType": "administrative",
-            "elementType": "labels",
-            "stylers": [{
-                "visibility": "off"
-            }]
-        }, {
-            "featureType": "administrative.locality",
-            "elementType": "labels",
-            "stylers": [{
-                "visibility": "on"
-            }]
-        }, {
-            "featureType": "administrative.land_parcel",
-            "stylers": [{
-                "weight": 6
-            }, {
-                "visibility": "off"
-            }]
-        }]
+  //chart = new google.visualization.ColumnChart(document.getElementById('chart'));
+  chart = new google.visualization.AreaChart(document.getElementById('chart'));
+  elevationService = new google.maps.ElevationService();
+  var myOptions = {
+    zoom: 17,
+    center: new google.maps.LatLng(52.050077, -2.694269),
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    mapTypeControlOptions: {
+      mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.TERRAIN,
+        google.maps.MapTypeId.SATELLITE
+      ]
+    },
+    disableDoubleClickZoom: true,
+    scrollwheel: true,
+    draggableCursor: "crosshair",
+    styles: [{
+      "featureType": "road.local",
+      "elementType": "labels.text",
+      "stylers": [{
+        "visibility": "off"
+      }]
+    }, {
+      "featureType": "poi",
+      "stylers": [{
+        "visibility": "off"
+      }]
+    }, {
+      "featureType": "poi.park",
+      "stylers": [{
+        "visibility": "simplified"
+      }]
+    }, {
+      "featureType": "poi.medical",
+      "stylers": [{
+        "visibility": "simplified"
+      }]
+    }, {
+      "featureType": "poi.sports_complex",
+      "stylers": [{
+        "visibility": "simplified"
+      }]
+    }, {
+      "featureType": "road.highway",
+      "elementType": "labels.text",
+      "stylers": [{
+        "visibility": "on"
+      }]
+    }, {
+      "featureType": "water",
+      "stylers": [{
+        "visibility": "simplified"
+      }]
+    }, {
+      "featureType": "transit.station",
+      "stylers": [{
+        "visibility": "simplified"
+      }]
+    }, {
+      "featureType": "administrative",
+      "elementType": "labels",
+      "stylers": [{
+        "visibility": "off"
+      }]
+    }, {
+      "featureType": "administrative.locality",
+      "elementType": "labels",
+      "stylers": [{
+        "visibility": "on"
+      }]
+    }, {
+      "featureType": "administrative.land_parcel",
+      "stylers": [{
+        "weight": 6
+      }, {
+        "visibility": "off"
+      }]
+    }]
+  }
+
+  map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+  poly = new google.maps.Polyline({
+    map: map,
+    strokeColor: "#F7584C",
+    strokeOpacity: 1,
+    strokeWeight: 6,
+    zindex: 1
+  });
+
+  google.maps.event.addListener(map, "click", function(evt) {
+    if (path.getLength() === 0) {
+      path.push(evt.latLng);
+      poly.setPath(path);
+      poly.zindex += 1
+      startMarker = new google.maps.Marker({
+        position: path.j[0],
+        map: map,
+        animation: google.maps.Animation.DROP,
+        zIndex: google.maps.Marker.MAX_ZINDEX + 1,
+        title: 'Start',
+        icon: {
+          url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAMFBMVEUAAAAAAAAAAAAAAAAAAACbm5tSUlIAAADPz8+Dg4Pz8/Pn5+ff39////90rwD7+/uoz1A+AAAADXRSTlMAPDUKHXBOKJtk69C9P62KqQAAAO5JREFUOMtjoCswKVIUUnfGEGZ2EgQDFQNM8dSOjjAMGSNB0fN3geBPoKAysjiLoOjau2BwK1DQAUmiUGzvXSi4nSiOEGcXnH8XDn4KFsAlHCX/IiTuTxSBOwmiAaHFAOYkMZAGhJZEZZhJ0ndRwEYRqEmKsagSV4UMoJ5YiypxC+oVJtG7aCBQASxhKAPmvQMDMPOgMMRueXSJjxDbC3PRJa5BQkUxFl3iqhBEohdd4gZEQhBTQhCnBE6jcFqO07k4PYgzSHAGIs5gxxlRuKKWUGLATD4EEhxmEiWUqDGzAeGMg5nVCGdORHamJwAAgXrCCB9z/34AAAAASUVORK5CYII=",
+          scaledSize: new google.maps.Size(24, 24),
+          anchor: new google.maps.Point(12, 12)
+        }
+
+      });
+    } else {
+
+      service.route({
+        origin: path.getAt(path.getLength() - 1),
+        destination: evt.latLng,
+        travelMode: google.maps.DirectionsTravelMode.BICYCLING,
+        optimizeWaypoints: true
+      }, function(result, status) {
+        if (status == google.maps.DirectionsStatus.OK) {
+          var iprevDistance = distance;
+          var idistance = result.routes[0].legs[0].distance.value;
+          var ireadDistance = result.routes[0].legs[0].distance.value;
+
+          var directionPath = [];
+          var legs = result.routes[0].legs;
+          for (i = 0; i < legs.length; i++) {
+            var steps = legs[i].steps;
+            for (j = 0; j < steps.length; j++) {
+              var nextSegment = steps[j].path;
+              for (k = 0; k < nextSegment.length; k++) {
+                directionPath.push(nextSegment[k]);
+              }
+            }
+          }
+
+          elevationService.getElevationAlongPath({
+            path: directionPath,
+            samples: samples
+          }, function(results, status) {
+            if (status == google.maps.ElevationStatus.OK) {
+              console.log(directionPath.length);
+              prevDistance.push(iprevDistance);
+              distance += idistance;
+              readDistance += ireadDistance;
+              combineElevations(results);
+            } else {
+
+              console.log('Too Long probs!!')
+              var split = chunk(directionPath, 300);
+            }
+          });
+        }
+      });
+    }
+  });
+
+  google.visualization.events.addListener(chart, 'onmouseover', function(e) {
+    if (mousemarker == null) {
+      mousemarker = new google.maps.Marker({
+        position: elevationsi[e.row].location,
+        map: map,
+        animation: google.maps.Animation.DROP,
+        zIndex: google.maps.Marker.MAX_ZINDEX + 2,
+        icon: {
+          url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAMFBMVEUAAAAAAAAAAAAAAAAAAACbm5sAAABSUlLPz8+Dg4Pz8/Pn5+ff39////9cr/v7+/to1/yUAAAADXRSTlMAPAo2HXAqTptc69C9YjsDOgAAAO5JREFUOMtjoCtQSTYUNnPCEGZyFgQDEwVM8dKOjnAMGWVB0fN3geBPoKARsjiLoOjau2BwK1DQAUkiUXzvXSi4XSiGEGcTnH8XDn4KJsAlHCX/IiTuTxSBOwmiAaFFAeYkcZAGhJZCI5hJ0ndRwEYRqEmGsagSV4UVoJ5YiypxC+oVZtG7aCDQACyhKAPmvQMDMPOgEMRueXSJjxDbE2vRJa5DQsUwFl3iqjBEohdd4gZEQhBTQhCnBE6jcFqO07k4PYgzSHAGIs5gxxlRuKKWUGLATD4EEhxmEiWUqDGzAeGMg5nVCGdORHamJwAAHwnCTAmgn+MAAAAASUVORK5CYII=",
+          scaledSize: new google.maps.Size(24, 24),
+          anchor: new google.maps.Point(12, 12)
+        }
+
+      });
+    } else {
+      mousemarker.setPosition(elevationsi[e.row].location);
+    }
+    console.log(e.row);
+    document.getElementById('dist').innerHTML = "Distance: " + (e.row / resLeng * dist).toFixed(3).toString() + "km";
+    document.getElementById('elevation').innerHTML = "Elevation: " + elevationsi[e.row].elevation.toFixed(3).toString() + "m";
+    if (e.row != 0) {
+      document.getElementById('grade').innerHTML = "Gradient: " + (((elevationsi[e.row].elevation - elevationsi[e.row - 1].elevation) / (getDistanceFromLatLonInKm(elevationsi[e.row].location.lat(), elevationsi[e.row].location.lng(), elevationsi[e.row - 1].location.lat(), elevationsi[e.row - 1].location.lng()) * 1000) * 100)).toFixed(3).toString() + "%";
+    } else {
+      document.getElementById('grade').innerHTML = "Gradient: " + (((elevationsi[e.row + 1].elevation - elevationsi[e.row].elevation) / (getDistanceFromLatLonInKm(elevationsi[e.row + 1].location.lat(), elevationsi[e.row + 1].location.lng(), elevationsi[e.row].location.lat(), elevationsi[e.row].location.lng()) * 1000) * 100)).toFixed(3).toString() + "%";
     }
 
-    map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-    poly = new google.maps.Polyline({
-        map: map,
-        strokeColor: "#F7584C",
-        strokeOpacity: 1,
-        strokeWeight: 6,
-        zindex: 1
-    });
-
-    google.maps.event.addListener(map, "click", function (evt) {
-        if (path.getLength() === 0) {
-            path.push(evt.latLng);
-            poly.setPath(path);
-            poly.zindex += 1
-            startMarker = new google.maps.Marker({
-                position: path.j[0],
-                map: map,
-                animation: google.maps.Animation.DROP,
-                zIndex: google.maps.Marker.MAX_ZINDEX + 1,
-                title: 'Start',
-                icon: {
-                    url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAMFBMVEUAAAAAAAAAAAAAAAAAAACbm5tSUlIAAADPz8+Dg4Pz8/Pn5+ff39////90rwD7+/uoz1A+AAAADXRSTlMAPDUKHXBOKJtk69C9P62KqQAAAO5JREFUOMtjoCswKVIUUnfGEGZ2EgQDFQNM8dSOjjAMGSNB0fN3geBPoKAysjiLoOjau2BwK1DQAUmiUGzvXSi4nSiOEGcXnH8XDn4KFsAlHCX/IiTuTxSBOwmiAaHFAOYkMZAGhJZEZZhJ0ndRwEYRqEmKsagSV4UMoJ5YiypxC+oVJtG7aCBQASxhKAPmvQMDMPOgMMRueXSJjxDbC3PRJa5BQkUxFl3iqhBEohdd4gZEQhBTQhCnBE6jcFqO07k4PYgzSHAGIs5gxxlRuKKWUGLATD4EEhxmEiWUqDGzAeGMg5nVCGdORHamJwAAgXrCCB9z/34AAAAASUVORK5CYII=",
-                    scaledSize: new google.maps.Size(24, 24),
-                    anchor: new google.maps.Point(12, 12)
-                }
-
-            });
-        } else {
-
-            service.route({
-                origin: path.getAt(path.getLength() - 1),
-                destination: evt.latLng,
-                travelMode: google.maps.DirectionsTravelMode.BICYCLING,
-                optimizeWaypoints: true
-            }, function (result, status) {
-                if (status == google.maps.DirectionsStatus.OK) {
-                    var iprevDistance = distance;
-                    var idistance = result.routes[0].legs[0].distance.value;
-                    var ireadDistance = result.routes[0].legs[0].distance.value;
-
-                    var directionPath = [];
-                    var legs = result.routes[0].legs;
-                    for (i = 0; i < legs.length; i++) {
-                        var steps = legs[i].steps;
-                        for (j = 0; j < steps.length; j++) {
-                            var nextSegment = steps[j].path;
-                            for (k = 0; k < nextSegment.length; k++) {
-                                directionPath.push(nextSegment[k]);
-                            }
-                        }
-                    }
-
-                    elevationService.getElevationAlongPath({
-                        path: directionPath,
-                        samples: samples
-                    }, function (results, status) {
-                        if (status == google.maps.ElevationStatus.OK) {
-                            console.log(directionPath.length);
-                            prevDistance.push(iprevDistance);
-                            distance += idistance;
-                            readDistance += ireadDistance;
-                            combineElevations(results);
-                        } else {
-
-                            console.log('Too Long probs!!')
-                            var split = chunk(directionPath, 300);
-                        }
-                    });
-                }
-            });
-        }
-    });
-
-    google.visualization.events.addListener(chart, 'onmouseover', function (e) {
-        if (mousemarker == null) {
-            mousemarker = new google.maps.Marker({
-                position: elevationsi[e.row].location,
-                map: map,
-                animation: google.maps.Animation.DROP,
-                zIndex: google.maps.Marker.MAX_ZINDEX + 2,
-                icon: {
-                    url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAMFBMVEUAAAAAAAAAAAAAAAAAAACbm5sAAABSUlLPz8+Dg4Pz8/Pn5+ff39////9cr/v7+/to1/yUAAAADXRSTlMAPAo2HXAqTptc69C9YjsDOgAAAO5JREFUOMtjoCtQSTYUNnPCEGZyFgQDEwVM8dKOjnAMGWVB0fN3geBPoKARsjiLoOjau2BwK1DQAUkiUXzvXSi4XSiGEGcTnH8XDn4KJsAlHCX/IiTuTxSBOwmiAaFFAeYkcZAGhJZCI5hJ0ndRwEYRqEmGsagSV4UVoJ5YiypxC+oVZtG7aCDQACyhKAPmvQMDMPOgEMRueXSJjxDbE2vRJa5DQsUwFl3iqjBEohdd4gZEQhBTQhCnBE6jcFqO07k4PYgzSHAGIs5gxxlRuKKWUGLATD4EEhxmEiWUqDGzAeGMg5nVCGdORHamJwAAHwnCTAmgn+MAAAAASUVORK5CYII=",
-                    scaledSize: new google.maps.Size(24, 24),
-                    anchor: new google.maps.Point(12, 12)
-                }
-
-            });
-        } else {
-            mousemarker.setPosition(elevationsi[e.row].location);
-        }
-        console.log(e.row);
-        document.getElementById('dist').innerHTML = "Distance: " + (e.row / resLeng * dist).toFixed(3).toString() + "km";
-        document.getElementById('elevation').innerHTML = "Elevation: " + elevationsi[e.row].elevation.toFixed(3).toString() + "m";
-        if (e.row != 0) {
-            document.getElementById('grade').innerHTML = "Gradient: " + (((elevationsi[e.row].elevation - elevationsi[e.row - 1].elevation) / (getDistanceFromLatLonInKm(elevationsi[e.row].location.B, elevationsi[e.row].location.k, elevationsi[e.row - 1].location.B, elevationsi[e.row - 1].location.k) * 1000) * 100)).toFixed(3).toString() + "%";
-        } else {
-            document.getElementById('grade').innerHTML = "Gradient: " + (((elevationsi[e.row + 1].elevation - elevationsi[e.row].elevation) / (getDistanceFromLatLonInKm(elevationsi[e.row + 1].location.B, elevationsi[e.row + 1].location.k, elevationsi[e.row].location.B, elevationsi[e.row].location.k) * 1000) * 100)).toFixed(3).toString() + "%";
-        }
 
 
+  });
 
-    });
+  google.maps.event.addListener(map, "mouseover", clearMouseMarker);
 
-    google.maps.event.addListener(map, "mouseover", clearMouseMarker);
+  google.maps.event.addListener(map, "rightclick", function(event) {
+    var n = 0;
+    while (n <= numOfPoints) {
+      path.pop();
+      latlngs.pop();
+      otherInfo.pop();
+      n++;
+    }
+    poly.setPath(path);
+    var prev = prevDistance[prevDistance.length - 1];
+    prevDistance.pop();
+    distance = prev;
 
-    google.maps.event.addListener(map, "rightclick", function (event) {
-        var n = 0;
-        while (n <= numOfPoints) {
-            path.pop();
-            latlngs.pop();
-            otherInfo.pop();
-            n++;
-        }
-        poly.setPath(path);
-        var prev = prevDistance[prevDistance.length - 1];
-        prevDistance.pop();
-        distance = prev;
-
-        plotElevation(latlngs);
-    });
+    plotElevation(latlngs);
+  });
 
 }
 
 function combineElevations(results) {
-    for (var i = 0, len = results.length; i < len; i++) {
-        numOfPoints = results.length;
-        latlngs.push(results[i]);
-        path.push(results[i].location)
-        otherInfo.push({
-            distanceAtPoint: ((((distance / results.length) * i) + prevResult) - prevResult) + totalPrevDistance() / 1000
-        });
+  for (var i = 0, len = results.length; i < len; i++) {
+    numOfPoints = results.length;
+    latlngs.push(results[i]);
+    path.push(results[i].location)
+    otherInfo.push({
+      distanceAtPoint: ((((distance / results.length) * i) + prevResult) - prevResult) + totalPrevDistance() / 1000
+    });
 
-    }
-    prevResult = ((distance / results.length) * (results.length)) + prevResult;
-    plotElevation(latlngs);
+  }
+  prevResult = ((distance / results.length) * (results.length)) + prevResult;
+  plotElevation(latlngs);
 }
 
 
@@ -251,263 +255,279 @@ function combineElevations(results) {
 var elevationsi = [];
 
 function plotElevation(results) {
-    if (results.length == 0) {
-        startMarker.setMap(null);
-        endMarker.setMap(null);
-        highestMarker.setMap(null);
-        lowestMarker.setMap(null);
+  if (results.length == 0) {
+    startMarker.setMap(null);
+    endMarker.setMap(null);
+    highestMarker.setMap(null);
+    lowestMarker.setMap(null);
 
-        document.getElementById('distance').innerHTML = "0.000km";
-        document.getElementById('dist').innerHTML = 'Distance: 0.000km';
-        document.getElementById('elevation').innerHTML = 'Elevation: 0.000m';
-        document.getElementById('grade').innerHTML = 'Gradient: 0.000%';
+    document.getElementById('distance').innerHTML = "0.000km";
+    document.getElementById('dist').innerHTML = 'Distance: 0.000km';
+    document.getElementById('elevation').innerHTML = 'Elevation: 0.000m';
+    document.getElementById('grade').innerHTML = 'Gradient: 0.000%';
 
-        document.getElementById('map_canvas').style.height = '100%';
-        document.getElementById('chart').style.height = '0';
-        var prev = prevDistance[prevDistance.length - 1];
-        prevDistance.pop();
-        distance = 0;
+    document.getElementById('map_canvas').style.height = '100%';
+    document.getElementById('chart').style.height = '0';
+    var prev = prevDistance[prevDistance.length - 1];
+    prevDistance.pop();
+    distance = 0;
+  } else {
+    console.log(convertToHHMM(poly.Distance() * 1000 / 20358.8));
+    if (endMarker !== null) {
+      endMarker.setMap(null);
+    }
+    endMarker = new google.maps.Marker({
+      position: path.j[path.j.length - 1],
+      map: map,
+      animation: google.maps.Animation.DROP,
+      zIndex: google.maps.Marker.MAX_ZINDEX + 1,
+      title: 'Finish',
+      icon: {
+        url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAALVBMVEUAAAAAAAAAAAAAAAAAAAD6+vqbm5vPz88AAABSUlKDg4Pf39/n5+f////sRT3QFh3tAAAADXRSTlMAPDUKHf5wmyhOZMPZRK8nZQAAAO1JREFUOMtjoCswaVIU0nDGEGZ2EgQDFQNM8Wnl5ZkYMkaCYlvvAkF0oqAysjiLoFjsXTC4mijogCTRKHn2LhTcmSiBEOcQXHoXDqIEG+ASjlKxCImrC0XgToJoQGgxgDlJEqQBoWWiMswkmbso4KAI1CTFXFSJa0IGUE/EokpchXqFSewuGkhUAEsYSoN578AAzNwoDLFbFF0iEGJ741x0iZuQUFHMRZe4JgSRqEWXuA6REMSUEMQpgdMonJbjdC5OD+IMEpyBiDPYcUYUrqgllBgwkw+BBIeZRAklasxsQDjjYGY1wpkTkZ3pCQBFPruGmPCRnwAAAABJRU5ErkJggg==",
+        scaledSize: new google.maps.Size(24, 24),
+        anchor: new google.maps.Point(12, 12)
+      }
+
+    });
+    document.getElementById('chart').style.height = '20%';
+    document.getElementById('map_canvas').style.height = '80%';
+    document.getElementById('distance').innerHTML = poly.Distance().toFixed(3).toString() + "km";
+  }
+  elevationsi = results;
+  console.log(results);
+  var pathi = [];
+  for (var i = 0; i < results.length; i++) {
+    pathi.push(elevationsi[i].location);
+  }
+
+
+  var h = 0;
+  var l = elevationsi.length - 1;
+  var highest = 0;
+  var highestKey = 0;
+  var lowest = elevationsi.length - 1;
+  var lowestKey = 0;
+  while (h < elevationsi.length) {
+    if (elevationsi[h].elevation > highest) {
+      highest = elevationsi[h].elevation;
+      highestKey = h;
+    }
+    h++;
+  }
+
+  if (highestMarker !== null) {
+    highestMarker.setMap(null);
+  }
+  highestMarker = new google.maps.Marker({
+    position: elevationsi[highestKey].location,
+    map: map,
+    animation: google.maps.Animation.DROP,
+    title: 'Highest Point',
+    icon: {
+      url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAAUVBMVEUAAACDg4M8PDzn5+ebm5sAAADPz88AAAAAAAAAAAAAAADf399kZGTz8/Pz8/P///90rwB4swD7+/uEuhn3++/L45+714Du9t2rz2DX6beXx0Crk0oZAAAAD3RSTlMAYEjKcDSbOx4LMLdU6+Idoyu5AAABTUlEQVRIx92V3XaDIBCEG4MCagL4g5r3f9CKsZ2FNaU53mWuck5m8u2SZfn6TGmlarmqVkr/x11KolLpjH2ztaJaJVoZ9FdEh18XTWd2dY0IlJcJFew3E+kmAuSlv7gapmuBROq/dOZA3YUluD+f0PAfJzQ7nwJ+nihkqdOCaL/Lknb+UxQKEoaof6QMsRcFwN1Ao3Mp4h4jyggw9Nb2HFFGFTUG8tZa55NAs9WEiroYsCKG8JEcVKgJgTYGBM3GTLSwlgRq2sLkngE3mdmNtIn6NyBlhS/m3e/GNUoQlZQ0wAF9iLoxG3gQQOg9F1h2gN0AQCCApgEIRju7Z3AgTfNjHZ1N5cmx8j+uj7xA4I/DaADAERgNDB+GgiMwfMl4e3coj/FOLxCUuUC4ohC7om8vgXNrJr/Izq/K/DI+v+7zD8r5Jyv/KOaf3Y/UN/VmQ0aqwjwqAAAAAElFTkSuQmCC",
+      scaledSize: new google.maps.Size(24, 24),
+      anchor: new google.maps.Point(12, 12)
+    }
+
+  });
+
+
+  while (l <= elevationsi.length && l >= 0) {
+    if (elevationsi[l].elevation < lowest) {
+      lowest = elevationsi[l].elevation;
+      lowestKey = l;
+    } else {}
+    l--;
+  }
+
+  if (lowestMarker !== null) {
+    lowestMarker.setMap(null);
+  }
+  lowestMarker = new google.maps.Marker({
+    position: elevationsi[lowestKey].location,
+    map: map,
+    animation: google.maps.Animation.DROP,
+    title: 'Lowest Point',
+    icon: {
+      url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAATlBMVEUAAAAAAADPz8+Dg4Obm5sAAAAAAAAAAAAAAAAAAAA8PDzn5+fz8/Pf399kZGT///90rwD7+/uBuBPr89eTwTjB3YrP5aev0Wj3++/b67+DX0nZAAAAD3RSTlMAOJtgcAYQPB4wSMrpvFQp7Y0FAAABSElEQVRIx91VzZqDIBBbWnDAVkWq/Xn/F92yX9cMZLscvDWnVhMnGWD4+kx03gcjYoL3XZvtfBCF4F2DbjJttIcn7Jh/m/8kXf66HebphXmwucpbYz7Tz1OBc5b4t/z+NBFOPRQ1/5jNEOYjKZjfVnQVf10rRZXcBek1/xHjQyt6Ca42pPPeU4zprpNXppwRq10v8YlFP7FiXFlA9/8Wf3DT61GWCEWBa3zhWpQIRYsGvLqkX0G64Okg0mlHMwIvccOC4HP2BMFIASjGKJ4jIICOwSGMHLYAscIW4yBmEwgEqRYkCIQEaBK1CQJYwioDixaYP0OvscBKodFWMgRTaCsWjgzBFBaOtwYMwRRtDYQAMhP/EIG2Nwloe9MBIgEOEB1RFvAR5SEA8BDgMcPAmNk7yNqjcv8wbo/7/RdK+8rafynytfuR+Abtk0JtLMkujQAAAABJRU5ErkJggg==",
+      scaledSize: new google.maps.Size(24, 24),
+      anchor: new google.maps.Point(12, 12)
+    }
+
+  });
+
+
+  var data = new google.visualization.DataTable();
+  data.addColumn('string', 'Sample');
+  data.addColumn('number', 'Elevation');
+  data.addColumn({
+    type: 'string',
+    role: 'annotation'
+  });
+  dist = poly.Distance();
+  resLeng = results.length;
+  for (var i = 0; i < results.length; i++) {
+    if (i == highestKey) {
+      data.addRow(['', elevationsi[i].elevation, 'Highest']);
+    } else if (i == lowestKey) {
+      data.addRow(['', elevationsi[i].elevation, 'Lowest']);
     } else {
-        console.log(convertToHHMM(poly.Distance()*1000 / 20358.8));
-        if (endMarker !== null) {
-            endMarker.setMap(null);
-        }
-        endMarker = new google.maps.Marker({
-            position: path.j[path.j.length - 1],
-            map: map,
-            animation: google.maps.Animation.DROP,
-            zIndex: google.maps.Marker.MAX_ZINDEX + 1,
-            title: 'Finish',
-            icon: {
-                url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAALVBMVEUAAAAAAAAAAAAAAAAAAAD6+vqbm5vPz88AAABSUlKDg4Pf39/n5+f////sRT3QFh3tAAAADXRSTlMAPDUKHf5wmyhOZMPZRK8nZQAAAO1JREFUOMtjoCswaVIU0nDGEGZ2EgQDFQNM8Wnl5ZkYMkaCYlvvAkF0oqAysjiLoFjsXTC4mijogCTRKHn2LhTcmSiBEOcQXHoXDqIEG+ASjlKxCImrC0XgToJoQGgxgDlJEqQBoWWiMswkmbso4KAI1CTFXFSJa0IGUE/EokpchXqFSewuGkhUAEsYSoN578AAzNwoDLFbFF0iEGJ741x0iZuQUFHMRZe4JgSRqEWXuA6REMSUEMQpgdMonJbjdC5OD+IMEpyBiDPYcUYUrqgllBgwkw+BBIeZRAklasxsQDjjYGY1wpkTkZ3pCQBFPruGmPCRnwAAAABJRU5ErkJggg==",
-                scaledSize: new google.maps.Size(24, 24),
-                anchor: new google.maps.Point(12, 12)
-            }
-
-        });
-        document.getElementById('chart').style.height = '20%';
-        document.getElementById('map_canvas').style.height = '80%';
-        document.getElementById('distance').innerHTML = poly.Distance().toFixed(3).toString() + "km";
+      data.addRow(['', elevationsi[i].elevation, null]);
     }
-    elevationsi = results;
-    console.log(results);
-    var pathi = [];
-    for (var i = 0; i < results.length; i++) {
-        pathi.push(elevationsi[i].location);
+  }
+
+
+
+
+  var options = {
+    annotations: {
+      style: 'letter',
+      highContrast: false
+    },
+    tooltip: {
+      isHtml: true
+    },
+    width: '100%',
+    height: '20%',
+    legend: 'none',
+    focusBorderColor: '#ffffff',
+    curveType: 'none',
+    areaOpacity: 1,
+    colors: ['#fd4141'],
+    axisTitlesPosition: 'none',
+    selectionMode: 'multiple',
+    focusTarget: 'category',
+    lineWidth: 0.01,
+    vAxis: {
+      minorGridlines: {
+        count: 2
+      }
+    },
+    explorer: {
+      maxZoomOut: 1,
+      keepInBounds: false
     }
-
-
-    var h = 0;
-    var l = elevationsi.length - 1;
-    var highest = 0;
-    var highestKey = 0;
-    var lowest = elevationsi.length - 1;
-    var lowestKey = 0;
-    while (h < elevationsi.length) {
-        if (elevationsi[h].elevation > highest) {
-            highest = elevationsi[h].elevation;
-            highestKey = h;
-        }
-        h++;
-    }
-
-    if (highestMarker !== null) {
-        highestMarker.setMap(null);
-    }
-    highestMarker = new google.maps.Marker({
-        position: elevationsi[highestKey].location,
-        map: map,
-        animation: google.maps.Animation.DROP,
-        title: 'Highest Point',
-        icon: {
-            url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAAUVBMVEUAAACDg4M8PDzn5+ebm5sAAADPz88AAAAAAAAAAAAAAADf399kZGTz8/Pz8/P///90rwB4swD7+/uEuhn3++/L45+714Du9t2rz2DX6beXx0Crk0oZAAAAD3RSTlMAYEjKcDSbOx4LMLdU6+Idoyu5AAABTUlEQVRIx92V3XaDIBCEG4MCagL4g5r3f9CKsZ2FNaU53mWuck5m8u2SZfn6TGmlarmqVkr/x11KolLpjH2ztaJaJVoZ9FdEh18XTWd2dY0IlJcJFew3E+kmAuSlv7gapmuBROq/dOZA3YUluD+f0PAfJzQ7nwJ+nihkqdOCaL/Lknb+UxQKEoaof6QMsRcFwN1Ao3Mp4h4jyggw9Nb2HFFGFTUG8tZa55NAs9WEiroYsCKG8JEcVKgJgTYGBM3GTLSwlgRq2sLkngE3mdmNtIn6NyBlhS/m3e/GNUoQlZQ0wAF9iLoxG3gQQOg9F1h2gN0AQCCApgEIRju7Z3AgTfNjHZ1N5cmx8j+uj7xA4I/DaADAERgNDB+GgiMwfMl4e3coj/FOLxCUuUC4ohC7om8vgXNrJr/Izq/K/DI+v+7zD8r5Jyv/KOaf3Y/UN/VmQ0aqwjwqAAAAAElFTkSuQmCC",
-            scaledSize: new google.maps.Size(24, 24),
-            anchor: new google.maps.Point(12, 12)
-        }
-
-    });
-
-
-    while (l <= elevationsi.length && l >= 0) {
-        if (elevationsi[l].elevation < lowest) {
-            lowest = elevationsi[l].elevation;
-            lowestKey = l;
-        } else {}
-        l--;
-    }
-
-    if (lowestMarker !== null) {
-        lowestMarker.setMap(null);
-    }
-    lowestMarker = new google.maps.Marker({
-        position: elevationsi[lowestKey].location,
-        map: map,
-        animation: google.maps.Animation.DROP,
-        title: 'Lowest Point',
-        icon: {
-            url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAATlBMVEUAAAAAAADPz8+Dg4Obm5sAAAAAAAAAAAAAAAAAAAA8PDzn5+fz8/Pf399kZGT///90rwD7+/uBuBPr89eTwTjB3YrP5aev0Wj3++/b67+DX0nZAAAAD3RSTlMAOJtgcAYQPB4wSMrpvFQp7Y0FAAABSElEQVRIx91VzZqDIBBbWnDAVkWq/Xn/F92yX9cMZLscvDWnVhMnGWD4+kx03gcjYoL3XZvtfBCF4F2DbjJttIcn7Jh/m/8kXf66HebphXmwucpbYz7Tz1OBc5b4t/z+NBFOPRQ1/5jNEOYjKZjfVnQVf10rRZXcBek1/xHjQyt6Ca42pPPeU4zprpNXppwRq10v8YlFP7FiXFlA9/8Wf3DT61GWCEWBa3zhWpQIRYsGvLqkX0G64Okg0mlHMwIvccOC4HP2BMFIASjGKJ4jIICOwSGMHLYAscIW4yBmEwgEqRYkCIQEaBK1CQJYwioDixaYP0OvscBKodFWMgRTaCsWjgzBFBaOtwYMwRRtDYQAMhP/EIG2Nwloe9MBIgEOEB1RFvAR5SEA8BDgMcPAmNk7yNqjcv8wbo/7/RdK+8rafynytfuR+Abtk0JtLMkujQAAAABJRU5ErkJggg==",
-            scaledSize: new google.maps.Size(24, 24),
-            anchor: new google.maps.Point(12, 12)
-        }
-
-    });
-
-
-    var data = new google.visualization.DataTable();
-    data.addColumn('string', 'Sample');
-    data.addColumn('number', 'Elevation');
-    data.addColumn({
-        type: 'string',
-        role: 'annotation'
-    });
-    dist = poly.Distance();
-    resLeng = results.length;
-    for (var i = 0; i < results.length; i++) {
-        if (i == highestKey) {
-            data.addRow(['', elevationsi[i].elevation, 'Highest']);
-        } else if (i == lowestKey) {
-            data.addRow(['', elevationsi[i].elevation, 'Lowest']);
-        } else {
-            data.addRow(['', elevationsi[i].elevation, null]);
-        }
-    }
-
-
-
-
-    var options = {
-        annotations: {
-            style: 'letter',
-            highContrast: false
-        },
-        tooltip: {
-            isHtml: true
-        },
-        width: '100%',
-        height: '20%',
-        legend: 'none',
-        focusBorderColor: '#ffffff',
-        curveType: 'none',
-        areaOpacity: 1,
-        colors: ['#fd4141'],
-        axisTitlesPosition: 'none',
-        selectionMode: 'multiple',
-        focusTarget: 'category',
-        lineWidth: 0.01,
-        vAxis: {
-            minorGridlines: {
-                count: 2
-            }
-        },
-        explorer: {
-            maxZoomOut: 1,
-            keepInBounds: false
-        }
-    };
+  };
+  chart.draw(data, options);
+  document.getElementById('chart').style.display = 'block';
+  window.onresize = function() {
     chart.draw(data, options);
-    document.getElementById('chart').style.display = 'block';
-    window.onresize = function () {
-        chart.draw(data, options);
-    };
+  };
 
 }
 
 
 // Remove the green rollover marker when the mouse leaves the chart
 function clearMouseMarker() {
-    document.getElementById('dist').innerHTML = 'Distance: 0.000km';
-    document.getElementById('elevation').innerHTML = 'Elevation: 0.000m';
-    document.getElementById('grade').innerHTML = 'Gradient: 0.000%';
-    if (mousemarker != null) {
-        mousemarker.setMap(null);
-        mousemarker = null;
-    }
+  document.getElementById('dist').innerHTML = 'Distance: 0.000km';
+  document.getElementById('elevation').innerHTML = 'Elevation: 0.000m';
+  document.getElementById('grade').innerHTML = 'Gradient: 0.000%';
+  if (mousemarker != null) {
+    mousemarker.setMap(null);
+    mousemarker = null;
+  }
 }
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-    var R = 6371; // Radius of the earth in km
-    var dLat = deg2rad(lat2 - lat1); // deg2rad below
-    var dLon = deg2rad(lon2 - lon1);
-    var a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c; // Distance in km
-    return d;
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(lat2 - lat1); // deg2rad below
+  var dLon = deg2rad(lon2 - lon1);
+  var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c; // Distance in km
+  return d;
 }
 
 function deg2rad(deg) {
-    return deg * (Math.PI / 180)
+  return deg * (Math.PI / 180)
 }
 
 function totalPrevDistance() {
-    var num = 0;
-    var i = 0;
-    while (i < prevDistance.length) {
-        num += prevDistance[i];
-        i++;
+  var num = 0;
+  var i = 0;
+  while (i < prevDistance.length) {
+    num += prevDistance[i];
+    i++;
 
-    }
-    return num;
+  }
+  return num;
 }
 
-google.maps.Polyline.prototype.Distance = function () {
-    var dist = 0;
-    for (var i = 1; i < this.getPath().getLength(); i++) {
-        dist += this.getPath().getAt(i).distanceFrom(this.getPath().getAt(i - 1));
-    }
-    return dist;
+google.maps.Polyline.prototype.Distance = function() {
+  var dist = 0;
+  for (var i = 1; i < this.getPath().getLength(); i++) {
+    dist += this.getPath().getAt(i).distanceFrom(this.getPath().getAt(i - 1));
+  }
+  return dist;
 }
 
-google.maps.LatLng.prototype.distanceFrom = function (newLatLng) {
-    var R = 6371; // km (change this constant to get miles)
-    //var R = 6378100; // meters
-    var lat1 = this.lat();
-    var lon1 = this.lng();
-    var lat2 = newLatLng.lat();
-    var lon2 = newLatLng.lng();
-    var dLat = (lat2 - lat1) * Math.PI / 180;
-    var dLon = (lon2 - lon1) * Math.PI / 180;
-    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c;
-    return d;
-}
+google.maps.LatLng.prototype.distanceFrom = function(newLatLng) {
+  var R = 6371; // km (change this constant to get miles)
+  //var R = 6378100; // meters
+  var lat1 = this.lat();
+  var lon1 = this.lng();
+  var lat2 = newLatLng.lat();
+  var lon2 = newLatLng.lng();
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLon = (lon2 - lon1) * Math.PI / 180;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c;
+  return d;
+};
 
 function chunk(arr, len) {
 
-    var chunks = [],
-        i = 0,
-        n = arr.length;
+  var chunks = [],
+    i = 0,
+    n = arr.length;
 
-    while (i < n) {
-        chunks.push(arr.slice(i, i += len));
-    }
+  while (i < n) {
+    chunks.push(arr.slice(i, i += len));
+  }
 
-    return chunks;
+  return chunks;
 }
 
 function outputJSON() {
-    return LZString.compress(JSON.stringify(elevationsi));
+  return JSON.stringify(elevationsi);
 }
 
 function convertToHHMM(f) {
-    var d = parseInt(Number(f));
-    var c = Math.round((Number(f) - d) * 60);
-    var e;
-    if (c < 10) {
-        e = "0" + c;
-    } else {
-        e = c;
-    }
-    return d + ":" + e;
+  var d = parseInt(Number(f));
+  var c = Math.round((Number(f) - d) * 60);
+  var e;
+  if (c < 10) {
+    e = "0" + c;
+  } else {
+    e = c;
+  }
+  return d + ":" + e;
 }
 
+function download() {
+  var polyPointArray = poly.latLngs.getArray()[0].j;
+  var kmlData = "";
+  for (i = 0; i < polyPointArray.length; i++) {
+    var point = polyPointArray[i].lng() + "," + polyPointArray[i].lat() + '\n';
+    kmlData = kmlData + point;
+  }
+  saveContent("data:application/octet-stream," + encodeURIComponent(kmlFirst + kmlData + kmlLast), "route.kml");
+}
 
+function saveContent(fileContents, fileName) {
+  var link = document.createElement('a');
+  link.download = fileName;
+  link.href = fileContents;
+  link.click();
+}
 
+document.getElementById('download').addEventListener('click', download);
 // Copyright (c) 2013 Pieroxy <pieroxy@pieroxy.net>
 // This work is free. You can redistribute it and/or modify it
 // under the terms of the WTFPL, Version 2
@@ -518,84 +538,85 @@ function convertToHHMM(f) {
 //
 // LZ-based compression algorithm, version 1.3.3
 var LZString = {
-  
-  
+
+
   // private property
-  _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-  _f : String.fromCharCode,
-  
-  compressToBase64 : function (input) {
+  _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+  _f: String.fromCharCode,
+
+  compressToBase64: function(input) {
     if (input == null) return "";
     var output = "";
     var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
     var i = 0;
-    
+
     input = LZString.compress(input);
-    
-    while (i < input.length*2) {
-      
-      if (i%2==0) {
-        chr1 = input.charCodeAt(i/2) >> 8;
-        chr2 = input.charCodeAt(i/2) & 255;
-        if (i/2+1 < input.length) 
-          chr3 = input.charCodeAt(i/2+1) >> 8;
-        else 
+
+    while (i < input.length * 2) {
+
+      if (i % 2 == 0) {
+        chr1 = input.charCodeAt(i / 2) >> 8;
+        chr2 = input.charCodeAt(i / 2) & 255;
+        if (i / 2 + 1 < input.length)
+          chr3 = input.charCodeAt(i / 2 + 1) >> 8;
+        else
           chr3 = NaN;
       } else {
-        chr1 = input.charCodeAt((i-1)/2) & 255;
-        if ((i+1)/2 < input.length) {
-          chr2 = input.charCodeAt((i+1)/2) >> 8;
-          chr3 = input.charCodeAt((i+1)/2) & 255;
-        } else 
-          chr2=chr3=NaN;
+        chr1 = input.charCodeAt((i - 1) / 2) & 255;
+        if ((i + 1) / 2 < input.length) {
+          chr2 = input.charCodeAt((i + 1) / 2) >> 8;
+          chr3 = input.charCodeAt((i + 1) / 2) & 255;
+        } else
+          chr2 = chr3 = NaN;
       }
-      i+=3;
-      
+      i += 3;
+
       enc1 = chr1 >> 2;
       enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
       enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
       enc4 = chr3 & 63;
-      
+
       if (isNaN(chr2)) {
         enc3 = enc4 = 64;
       } else if (isNaN(chr3)) {
         enc4 = 64;
       }
-      
+
       output = output +
         LZString._keyStr.charAt(enc1) + LZString._keyStr.charAt(enc2) +
-          LZString._keyStr.charAt(enc3) + LZString._keyStr.charAt(enc4);
-      
+        LZString._keyStr.charAt(enc3) + LZString._keyStr.charAt(enc4);
+
     }
-    
+
     return output;
   },
-  
-  decompressFromBase64 : function (input) {
+
+  decompressFromBase64: function(input) {
     if (input == null) return "";
     var output = "",
-        ol = 0, 
-        output_,
-        chr1, chr2, chr3,
-        enc1, enc2, enc3, enc4,
-        i = 0, f=LZString._f;
-    
+      ol = 0,
+      output_,
+      chr1, chr2, chr3,
+      enc1, enc2, enc3, enc4,
+      i = 0,
+      f = LZString._f;
+
     input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-    
+
     while (i < input.length) {
-      
+
       enc1 = LZString._keyStr.indexOf(input.charAt(i++));
       enc2 = LZString._keyStr.indexOf(input.charAt(i++));
       enc3 = LZString._keyStr.indexOf(input.charAt(i++));
       enc4 = LZString._keyStr.indexOf(input.charAt(i++));
-      
+
       chr1 = (enc1 << 2) | (enc2 >> 4);
       chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
       chr3 = ((enc3 & 3) << 6) | enc4;
-      
-      if (ol%2==0) {
+
+      if (ol % 2 == 0) {
         output_ = chr1 << 8;
-        
+
         if (enc3 != 64) {
           output += f(output_ | chr2);
         }
@@ -604,7 +625,7 @@ var LZString = {
         }
       } else {
         output = output + f(output_ | chr1);
-        
+
         if (enc3 != 64) {
           output_ = chr2 << 8;
         }
@@ -612,212 +633,212 @@ var LZString = {
           output += f(output_ | chr3);
         }
       }
-      ol+=3;
+      ol += 3;
     }
-    
+
     return LZString.decompress(output);
-    
+
   },
 
-  compressToUTF16 : function (input) {
+  compressToUTF16: function(input) {
     if (input == null) return "";
     var output = "",
-        i,c,
-        current,
-        status = 0,
-        f = LZString._f;
-    
+      i, c,
+      current,
+      status = 0,
+      f = LZString._f;
+
     input = LZString.compress(input);
-    
-    for (i=0 ; i<input.length ; i++) {
+
+    for (i = 0; i < input.length; i++) {
       c = input.charCodeAt(i);
       switch (status++) {
         case 0:
-          output += f((c >> 1)+32);
+          output += f((c >> 1) + 32);
           current = (c & 1) << 14;
           break;
         case 1:
-          output += f((current + (c >> 2))+32);
+          output += f((current + (c >> 2)) + 32);
           current = (c & 3) << 13;
           break;
         case 2:
-          output += f((current + (c >> 3))+32);
+          output += f((current + (c >> 3)) + 32);
           current = (c & 7) << 12;
           break;
         case 3:
-          output += f((current + (c >> 4))+32);
+          output += f((current + (c >> 4)) + 32);
           current = (c & 15) << 11;
           break;
         case 4:
-          output += f((current + (c >> 5))+32);
+          output += f((current + (c >> 5)) + 32);
           current = (c & 31) << 10;
           break;
         case 5:
-          output += f((current + (c >> 6))+32);
+          output += f((current + (c >> 6)) + 32);
           current = (c & 63) << 9;
           break;
         case 6:
-          output += f((current + (c >> 7))+32);
+          output += f((current + (c >> 7)) + 32);
           current = (c & 127) << 8;
           break;
         case 7:
-          output += f((current + (c >> 8))+32);
+          output += f((current + (c >> 8)) + 32);
           current = (c & 255) << 7;
           break;
         case 8:
-          output += f((current + (c >> 9))+32);
+          output += f((current + (c >> 9)) + 32);
           current = (c & 511) << 6;
           break;
         case 9:
-          output += f((current + (c >> 10))+32);
+          output += f((current + (c >> 10)) + 32);
           current = (c & 1023) << 5;
           break;
         case 10:
-          output += f((current + (c >> 11))+32);
+          output += f((current + (c >> 11)) + 32);
           current = (c & 2047) << 4;
           break;
         case 11:
-          output += f((current + (c >> 12))+32);
+          output += f((current + (c >> 12)) + 32);
           current = (c & 4095) << 3;
           break;
         case 12:
-          output += f((current + (c >> 13))+32);
+          output += f((current + (c >> 13)) + 32);
           current = (c & 8191) << 2;
           break;
         case 13:
-          output += f((current + (c >> 14))+32);
+          output += f((current + (c >> 14)) + 32);
           current = (c & 16383) << 1;
           break;
         case 14:
-          output += f((current + (c >> 15))+32, (c & 32767)+32);
+          output += f((current + (c >> 15)) + 32, (c & 32767) + 32);
           status = 0;
           break;
       }
     }
-    
+
     return output + f(current + 32);
   },
-  
 
-  decompressFromUTF16 : function (input) {
+
+  decompressFromUTF16: function(input) {
     if (input == null) return "";
     var output = "",
-        current,c,
-        status=0,
-        i = 0,
-        f = LZString._f;
-    
+      current, c,
+      status = 0,
+      i = 0,
+      f = LZString._f;
+
     while (i < input.length) {
       c = input.charCodeAt(i) - 32;
-      
+
       switch (status++) {
         case 0:
           current = c << 1;
           break;
         case 1:
           output += f(current | (c >> 14));
-          current = (c&16383) << 2;
+          current = (c & 16383) << 2;
           break;
         case 2:
           output += f(current | (c >> 13));
-          current = (c&8191) << 3;
+          current = (c & 8191) << 3;
           break;
         case 3:
           output += f(current | (c >> 12));
-          current = (c&4095) << 4;
+          current = (c & 4095) << 4;
           break;
         case 4:
           output += f(current | (c >> 11));
-          current = (c&2047) << 5;
+          current = (c & 2047) << 5;
           break;
         case 5:
           output += f(current | (c >> 10));
-          current = (c&1023) << 6;
+          current = (c & 1023) << 6;
           break;
         case 6:
           output += f(current | (c >> 9));
-          current = (c&511) << 7;
+          current = (c & 511) << 7;
           break;
         case 7:
           output += f(current | (c >> 8));
-          current = (c&255) << 8;
+          current = (c & 255) << 8;
           break;
         case 8:
           output += f(current | (c >> 7));
-          current = (c&127) << 9;
+          current = (c & 127) << 9;
           break;
         case 9:
           output += f(current | (c >> 6));
-          current = (c&63) << 10;
+          current = (c & 63) << 10;
           break;
         case 10:
           output += f(current | (c >> 5));
-          current = (c&31) << 11;
+          current = (c & 31) << 11;
           break;
         case 11:
           output += f(current | (c >> 4));
-          current = (c&15) << 12;
+          current = (c & 15) << 12;
           break;
         case 12:
           output += f(current | (c >> 3));
-          current = (c&7) << 13;
+          current = (c & 7) << 13;
           break;
         case 13:
           output += f(current | (c >> 2));
-          current = (c&3) << 14;
+          current = (c & 3) << 14;
           break;
         case 14:
           output += f(current | (c >> 1));
-          current = (c&1) << 15;
+          current = (c & 1) << 15;
           break;
         case 15:
           output += f(current | c);
-          status=0;
+          status = 0;
           break;
       }
-      
-      
+
+
       i++;
     }
-    
+
     return LZString.decompress(output);
     //return output;
-    
+
   },
 
 
-  
-  compress: function (uncompressed) {
+
+  compress: function(uncompressed) {
     if (uncompressed == null) return "";
     var i, value,
-        context_dictionary= {},
-        context_dictionaryToCreate= {},
-        context_c="",
-        context_wc="",
-        context_w="",
-        context_enlargeIn= 2, // Compensate for the first entry which should not count
-        context_dictSize= 3,
-        context_numBits= 2,
-        context_data_string="", 
-        context_data_val=0, 
-        context_data_position=0,
-        ii,
-        f=LZString._f;
-    
+      context_dictionary = {},
+      context_dictionaryToCreate = {},
+      context_c = "",
+      context_wc = "",
+      context_w = "",
+      context_enlargeIn = 2, // Compensate for the first entry which should not count
+      context_dictSize = 3,
+      context_numBits = 2,
+      context_data_string = "",
+      context_data_val = 0,
+      context_data_position = 0,
+      ii,
+      f = LZString._f;
+
     for (ii = 0; ii < uncompressed.length; ii += 1) {
       context_c = uncompressed.charAt(ii);
-      if (!Object.prototype.hasOwnProperty.call(context_dictionary,context_c)) {
+      if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
         context_dictionary[context_c] = context_dictSize++;
         context_dictionaryToCreate[context_c] = true;
       }
-      
+
       context_wc = context_w + context_c;
-      if (Object.prototype.hasOwnProperty.call(context_dictionary,context_wc)) {
+      if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
         context_w = context_wc;
       } else {
-        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate,context_w)) {
-          if (context_w.charCodeAt(0)<256) {
-            for (i=0 ; i<context_numBits ; i++) {
+        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+          if (context_w.charCodeAt(0) < 256) {
+            for (i = 0; i < context_numBits; i++) {
               context_data_val = (context_data_val << 1);
               if (context_data_position == 15) {
                 context_data_position = 0;
@@ -828,8 +849,8 @@ var LZString = {
               }
             }
             value = context_w.charCodeAt(0);
-            for (i=0 ; i<8 ; i++) {
-              context_data_val = (context_data_val << 1) | (value&1);
+            for (i = 0; i < 8; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
               if (context_data_position == 15) {
                 context_data_position = 0;
                 context_data_string += f(context_data_val);
@@ -841,7 +862,7 @@ var LZString = {
             }
           } else {
             value = 1;
-            for (i=0 ; i<context_numBits ; i++) {
+            for (i = 0; i < context_numBits; i++) {
               context_data_val = (context_data_val << 1) | value;
               if (context_data_position == 15) {
                 context_data_position = 0;
@@ -853,8 +874,8 @@ var LZString = {
               value = 0;
             }
             value = context_w.charCodeAt(0);
-            for (i=0 ; i<16 ; i++) {
-              context_data_val = (context_data_val << 1) | (value&1);
+            for (i = 0; i < 16; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
               if (context_data_position == 15) {
                 context_data_position = 0;
                 context_data_string += f(context_data_val);
@@ -873,8 +894,8 @@ var LZString = {
           delete context_dictionaryToCreate[context_w];
         } else {
           value = context_dictionary[context_w];
-          for (i=0 ; i<context_numBits ; i++) {
-            context_data_val = (context_data_val << 1) | (value&1);
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
             if (context_data_position == 15) {
               context_data_position = 0;
               context_data_string += f(context_data_val);
@@ -884,8 +905,8 @@ var LZString = {
             }
             value = value >> 1;
           }
-          
-          
+
+
         }
         context_enlargeIn--;
         if (context_enlargeIn == 0) {
@@ -897,12 +918,12 @@ var LZString = {
         context_w = String(context_c);
       }
     }
-    
+
     // Output the code for w.
     if (context_w !== "") {
-      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate,context_w)) {
-        if (context_w.charCodeAt(0)<256) {
-          for (i=0 ; i<context_numBits ; i++) {
+      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+        if (context_w.charCodeAt(0) < 256) {
+          for (i = 0; i < context_numBits; i++) {
             context_data_val = (context_data_val << 1);
             if (context_data_position == 15) {
               context_data_position = 0;
@@ -913,8 +934,8 @@ var LZString = {
             }
           }
           value = context_w.charCodeAt(0);
-          for (i=0 ; i<8 ; i++) {
-            context_data_val = (context_data_val << 1) | (value&1);
+          for (i = 0; i < 8; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
             if (context_data_position == 15) {
               context_data_position = 0;
               context_data_string += f(context_data_val);
@@ -926,7 +947,7 @@ var LZString = {
           }
         } else {
           value = 1;
-          for (i=0 ; i<context_numBits ; i++) {
+          for (i = 0; i < context_numBits; i++) {
             context_data_val = (context_data_val << 1) | value;
             if (context_data_position == 15) {
               context_data_position = 0;
@@ -938,8 +959,8 @@ var LZString = {
             value = 0;
           }
           value = context_w.charCodeAt(0);
-          for (i=0 ; i<16 ; i++) {
-            context_data_val = (context_data_val << 1) | (value&1);
+          for (i = 0; i < 16; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
             if (context_data_position == 15) {
               context_data_position = 0;
               context_data_string += f(context_data_val);
@@ -958,8 +979,8 @@ var LZString = {
         delete context_dictionaryToCreate[context_w];
       } else {
         value = context_dictionary[context_w];
-        for (i=0 ; i<context_numBits ; i++) {
-          context_data_val = (context_data_val << 1) | (value&1);
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = (context_data_val << 1) | (value & 1);
           if (context_data_position == 15) {
             context_data_position = 0;
             context_data_string += f(context_data_val);
@@ -969,8 +990,8 @@ var LZString = {
           }
           value = value >> 1;
         }
-        
-        
+
+
       }
       context_enlargeIn--;
       if (context_enlargeIn == 0) {
@@ -978,11 +999,11 @@ var LZString = {
         context_numBits++;
       }
     }
-    
+
     // Mark the end of the stream
     value = 2;
-    for (i=0 ; i<context_numBits ; i++) {
-      context_data_val = (context_data_val << 1) | (value&1);
+    for (i = 0; i < context_numBits; i++) {
+      context_data_val = (context_data_val << 1) | (value & 1);
       if (context_data_position == 15) {
         context_data_position = 0;
         context_data_string += f(context_data_val);
@@ -992,88 +1013,92 @@ var LZString = {
       }
       value = value >> 1;
     }
-    
+
     // Flush the last char
     while (true) {
       context_data_val = (context_data_val << 1);
       if (context_data_position == 15) {
         context_data_string += f(context_data_val);
         break;
-      }
-      else context_data_position++;
+      } else context_data_position++;
     }
     return context_data_string;
   },
-  
-  decompress: function (compressed) {
+
+  decompress: function(compressed) {
     if (compressed == null) return "";
     if (compressed == "") return null;
     var dictionary = [],
-        next,
-        enlargeIn = 4,
-        dictSize = 4,
-        numBits = 3,
-        entry = "",
-        result = "",
-        i,
-        w,
-        bits, resb, maxpower, power,
-        c,
-        f = LZString._f,
-        data = {string:compressed, val:compressed.charCodeAt(0), position:32768, index:1};
-    
+      next,
+      enlargeIn = 4,
+      dictSize = 4,
+      numBits = 3,
+      entry = "",
+      result = "",
+      i,
+      w,
+      bits, resb, maxpower, power,
+      c,
+      f = LZString._f,
+      data = {
+        string: compressed,
+        val: compressed.charCodeAt(0),
+        position: 32768,
+        index: 1
+      };
+
     for (i = 0; i < 3; i += 1) {
       dictionary[i] = i;
     }
-    
+
     bits = 0;
-    maxpower = Math.pow(2,2);
-    power=1;
-    while (power!=maxpower) {
+    maxpower = Math.pow(2, 2);
+    power = 1;
+    while (power != maxpower) {
       resb = data.val & data.position;
       data.position >>= 1;
       if (data.position == 0) {
         data.position = 32768;
         data.val = data.string.charCodeAt(data.index++);
       }
-      bits |= (resb>0 ? 1 : 0) * power;
+      bits |= (resb > 0 ? 1 : 0) * power;
       power <<= 1;
     }
-    
+
     switch (next = bits) {
-      case 0: 
-          bits = 0;
-          maxpower = Math.pow(2,8);
-          power=1;
-          while (power!=maxpower) {
-            resb = data.val & data.position;
-            data.position >>= 1;
-            if (data.position == 0) {
-              data.position = 32768;
-              data.val = data.string.charCodeAt(data.index++);
-            }
-            bits |= (resb>0 ? 1 : 0) * power;
-            power <<= 1;
+      case 0:
+        bits = 0;
+        maxpower = Math.pow(2, 8);
+        power = 1;
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position == 0) {
+            data.position = 32768;
+            data.val = data.string.charCodeAt(data.index++);
           }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
         c = f(bits);
         break;
-      case 1: 
-          bits = 0;
-          maxpower = Math.pow(2,16);
-          power=1;
-          while (power!=maxpower) {
-            resb = data.val & data.position;
-            data.position >>= 1;
-            if (data.position == 0) {
-              data.position = 32768;
-              data.val = data.string.charCodeAt(data.index++);
-            }
-            bits |= (resb>0 ? 1 : 0) * power;
-            power <<= 1;
+      case 1:
+        bits = 0;
+        maxpower = Math.pow(2, 16);
+        power = 1;
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position == 0) {
+            data.position = 32768;
+            data.val = data.string.charCodeAt(data.index++);
           }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
         c = f(bits);
         break;
-      case 2: 
+      case 2:
         return "";
     }
     dictionary[3] = c;
@@ -1082,68 +1107,68 @@ var LZString = {
       if (data.index > data.string.length) {
         return "";
       }
-      
+
       bits = 0;
-      maxpower = Math.pow(2,numBits);
-      power=1;
-      while (power!=maxpower) {
+      maxpower = Math.pow(2, numBits);
+      power = 1;
+      while (power != maxpower) {
         resb = data.val & data.position;
         data.position >>= 1;
         if (data.position == 0) {
           data.position = 32768;
           data.val = data.string.charCodeAt(data.index++);
         }
-        bits |= (resb>0 ? 1 : 0) * power;
+        bits |= (resb > 0 ? 1 : 0) * power;
         power <<= 1;
       }
 
       switch (c = bits) {
-        case 0: 
+        case 0:
           bits = 0;
-          maxpower = Math.pow(2,8);
-          power=1;
-          while (power!=maxpower) {
+          maxpower = Math.pow(2, 8);
+          power = 1;
+          while (power != maxpower) {
             resb = data.val & data.position;
             data.position >>= 1;
             if (data.position == 0) {
               data.position = 32768;
               data.val = data.string.charCodeAt(data.index++);
             }
-            bits |= (resb>0 ? 1 : 0) * power;
+            bits |= (resb > 0 ? 1 : 0) * power;
             power <<= 1;
           }
 
           dictionary[dictSize++] = f(bits);
-          c = dictSize-1;
+          c = dictSize - 1;
           enlargeIn--;
           break;
-        case 1: 
+        case 1:
           bits = 0;
-          maxpower = Math.pow(2,16);
-          power=1;
-          while (power!=maxpower) {
+          maxpower = Math.pow(2, 16);
+          power = 1;
+          while (power != maxpower) {
             resb = data.val & data.position;
             data.position >>= 1;
             if (data.position == 0) {
               data.position = 32768;
               data.val = data.string.charCodeAt(data.index++);
             }
-            bits |= (resb>0 ? 1 : 0) * power;
+            bits |= (resb > 0 ? 1 : 0) * power;
             power <<= 1;
           }
           dictionary[dictSize++] = f(bits);
-          c = dictSize-1;
+          c = dictSize - 1;
           enlargeIn--;
           break;
-        case 2: 
+        case 2:
           return result;
       }
-      
+
       if (enlargeIn == 0) {
         enlargeIn = Math.pow(2, numBits);
         numBits++;
       }
-      
+
       if (dictionary[c]) {
         entry = dictionary[c];
       } else {
@@ -1154,22 +1179,22 @@ var LZString = {
         }
       }
       result += entry;
-      
+
       // Add w+entry[0] to the dictionary.
       dictionary[dictSize++] = w + entry.charAt(0);
       enlargeIn--;
-      
+
       w = entry;
-      
+
       if (enlargeIn == 0) {
         enlargeIn = Math.pow(2, numBits);
         numBits++;
       }
-      
+
     }
   }
 };
 
-if( typeof module !== 'undefined' && module != null ) {
+if (typeof module !== 'undefined' && module != null) {
   module.exports = LZString
 }
